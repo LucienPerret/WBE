@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Vier gewinnt</title>
+
+	<style>
+		div {
+			box-sizing: border-box;
+		}
+
+		button {
+			width: 10cm;
+			height: 1cm;
+			line-height: 1em;
+			padding: 0px;
+		}
+
+		.board {
+			width: 84vw;
+			margin: auto;
+			outline: 1px solid black;
+		}
+
+		.board .field {
+			border: 1px solid black;
+			width: 12vw;
+			height: 12vw;
+			float: left;
+		}
+
+		.board .field:first-child {
+			display: block;
+		}
+
+		.board .field .piece {
+			width: 10vw;
+			height: 10vw;
+			border-radius: 50%;
+			margin: 1vw;
+		}
+
+		.board .field .blue {
+			background-color: blue;
+		}
+
+		.board .field .red {
+			background-color: red;
+		}
+	</style>
+
+
+</head>
+
+<body>
+	<div class="board">
+	</div>
+	<script>
+		let state = {
+			board: [
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', '']
+			],
+			turnOfColor: 'r'
+		}
+		let initialState = JSON.parse(JSON.stringify(state))
+		const visualBoard = document.getElementsByClassName('board')[0]
+		drawBoard()
+
+		function drawBoard() {
+			for (const [rowId, row] of state.board.entries()) {
+				for (const [fieldId, field] of row.entries()) {
+					let id = rowId * 7 + fieldId
+					switch (field) {
+						case 'b':
+							let blue = getColorNode('b')
+							visualBoard.appendChild(getNode(id, blue))
+							break;
+						case 'r':
+							let red = getColorNode('r')
+							visualBoard.appendChild(getNode(id, red))
+							break;
+						default:
+							visualBoard.appendChild(getNode(id))
+							break;
+					}
+				}
+			}
+			visualBoard.appendChild(elt('button', {'onclick': 'clearBoard()', 'textContent': "Reset Board"}))
+		}
+
+		function getColorNode(colorCharacter) {
+
+			if (colorCharacter == 'b') {
+				return elt('div', {'class': 'piece blue'})
+			} else {
+				return elt('div', {'class': 'piece red'})
+			}
+		}
+		function getNode(id, child) {
+			if (child == undefined) {
+				return elt('div',
+					{'class': 'field', 'id': id, 'onclick': 'handleClick(this)'})
+			} else {
+				return elt('div',
+					{'class': 'field', 'id': id, 'onclick': 'handleClick(this)'}, child)
+			}
+		}
+
+		function elt(type, attrs, ...children) {
+			let node = document.createElement(type)
+			Object.keys(attrs).forEach(key => {
+				if (key === 'textContent') {
+					node.textContent = attrs[key]  // Direct property assignment for textContent
+				} else {
+					node.setAttribute(key, attrs[key])  // Normal attribute setting for others
+				}
+			})
+			for (let child of children) {
+				if (typeof child != "string") node.appendChild(child)
+				else node.appendChild(document.createTextNode(child))
+			}
+			return node
+		}
+
+		function handleClick(clickedNode) {
+			let node = checkColumn(clickedNode)
+			if (node != undefined) {
+				node.replaceWith(getNode(node.id, getColorNode(state.turnOfColor)))
+			}
+			switch (state.turnOfColor) {
+				case 'r':
+					state.turnOfColor = 'b'
+					break;
+				case 'b':
+					state.turnOfColor = 'r'
+					break;
+			}
+
+		}
+
+		function checkColumn(node) {
+			let lowestNode = undefined
+			let xPos = node.id % 7
+			let i = 0
+			for (i; i < 6; i++) {
+				if (state.board[i][xPos] == '') {
+					lowestNode = document.getElementById(i * 7 + xPos)
+				} else {
+					break
+				}
+			}
+			if (lowestNode != undefined) {
+				state.board[i - 1][xPos] = state.turnOfColor
+			}
+			return lowestNode
+		}
+
+		function clearBoard() {
+			state = JSON.parse(JSON.stringify(initialState))
+			while (visualBoard.firstChild) {
+				visualBoard.removeChild(visualBoard.lastChild)
+			}
+			drawBoard()
+		}
+	</script>
+</body>
+
+</html>

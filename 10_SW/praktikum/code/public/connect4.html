@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Vier gewinnt</title>
+	<link rel="stylesheet" href="styles.css">
+	<script>
+
+		/*
+		*  This solution sould be considered as a proof of concept – the code 
+		*  definitely needs some cleanup and documentation
+		*/
+
+		let state = {
+			board: [
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', '']
+			],
+			turnOfColor: 'r'
+		}
+		let initialState = JSON.parse(JSON.stringify(state))
+		console.log(initialState)
+
+		const SERVICE = "http://localhost:3000/api/data/c4state?api-key=c4game"
+
+
+		//  Initialize game
+		//
+		function initGame() {
+			let board = showBoard()
+			attachEventHandler(board)
+		}
+
+
+		//  Show board
+		// 
+		function showBoard() {
+			let board = getBoard()
+			// first remove all fields
+			clearBoard()
+
+			for (const [rowId, row] of state.board.entries()) {
+				for (const [fieldId, field] of row.entries()) {
+					let id = rowId * 7 + fieldId
+					switch (field) {
+						case 'b':
+							let blue = getColorNode('b')
+							board.appendChild(getNode(id, blue))
+							break;
+						case 'r':
+							let red = getColorNode('r')
+							board.appendChild(getNode(id, red))
+							break;
+						default:
+							board.appendChild(getNode(id))
+							break;
+					}
+				}
+			}
+			return board
+		}
+
+		function getBoard() {
+			let board = document.querySelector(".board")
+			return board
+		}
+
+		function clearBoard() {
+			let board = getBoard()
+			while (board.firstChild) {
+				board.removeChild(board.lastChild)
+			}
+		}
+
+		function resetState() {
+			state = JSON.parse(JSON.stringify(initialState))
+			showBoard()
+		}
+
+		function getColorNode(colorCharacter) {
+
+			if (colorCharacter == 'b') {
+				return elt('div', {'class': 'piece blue'})
+			} else {
+				return elt('div', {'class': 'piece red'})
+			}
+		}
+		function getNode(id, child) {
+			if (child == undefined) {
+				return elt('div', {'class': 'field', 'id': id})
+			} else {
+				return elt('div', {'class': 'field', 'id': id}, child)
+			}
+		}
+
+		function checkWinner(character, board) {
+			return checkColumn(character, board) || checkRow(character, board) || checkDiagonal(character, board)
+		}
+
+		function checkColumn(character, board) {
+			let consecutiveCharacters = 0
+			for (let i = 0; i < board[0].length; i++) {
+				for (let j = 0; j < board.length; j++) {
+					if (board[j][i] == character) {
+						consecutiveCharacters++
+						if (consecutiveCharacters == 4) return true
+					} else {
+						consecutiveCharacters = 0
+					}
+				}
+				consecutiveCharacters = 0
+			}
+			return false
+		}
+
+		function checkRow(character, board) {
+			let consecutiveCharacters = 0
+			for (const [rowId, row] of board.entries()) {
+				for (const [fieldId, field] of row.entries()) {
+					if (field == character) {
+						consecutiveCharacters++
+						if (consecutiveCharacters == 4) return true
+					} else {
+						consecutiveCharacters = 0
+					}
+				}
+				consecutiveCharacters = 0
+			}
+			return false
+
+		}
+
+		function checkDiagonal(character, board) {
+			const HEIGHT = board.length;
+			const WIDTH = board[0].length;
+
+			for (let row = 3; row < HEIGHT; row++) {
+				for (let col = 0; col < WIDTH - 3; col++) {
+					if (board[row][col] === character &&
+						board[row - 1][col + 1] === character &&
+						board[row - 2][col + 2] === character &&
+						board[row - 3][col + 3] === character) {
+						return true;
+					}
+				}
+			}
+
+			for (let row = 0; row < HEIGHT - 3; row++) {
+				for (let col = 0; col < WIDTH - 3; col++) {
+					if (board[row][col] === character &&
+						board[row + 1][col + 1] === character &&
+						board[row + 2][col + 2] === character &&
+						board[row + 3][col + 3] === character) {
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+		//  Helper function for DOM manipulation
+		// 
+		function elt(type, attrs, ...children) {
+			let node = document.createElement(type)
+			Object.keys(attrs).forEach(key => {
+				node.setAttribute(key, attrs[key])
+			})
+			for (let child of children) {
+				if (typeof child != "string") node.appendChild(child)
+				else node.appendChild(document.createTextNode(child))
+			}
+			return node
+		}
+
+
+		//  Attach event handler to board
+		//
+		function attachEventHandler(board) {
+			board.addEventListener("click", handleClick = function(e){
+				//check the column of the clicked node
+				let nodeIndex = -1
+				let xPos = e.target.id % 7
+				let i = 0
+				for (i; i < 6; i++) {
+					if (state.board[i][xPos] == '') {
+						nodeIndex = i * 7 + xPos
+					} else {
+						break
+					}
+				}
+				if (nodeIndex != -1) {
+					state.board[i - 1][xPos] = state.turnOfColor
+				}
+				switch (state.turnOfColor) {
+					case 'r':
+						state.turnOfColor = 'b'
+						break;
+					case 'b':
+						state.turnOfColor = 'r'
+						break;
+				}
+				showBoard()
+
+				if(checkWinner('r',state.board)){
+					alert('red has won')
+					board.removeEventListener('click', handleClick)
+				} else if(checkWinner('b',state.board)) {
+					alert('blue has won')
+					board.removeEventListener('click', handleClick)
+				}
+
+			})
+		}
+
+		let gameStateId = null;
+
+		function saveState() {
+			//check if the id exists
+			if (!gameStateId) {
+				fetch('http://localhost:3000/api/data?api-key=c4game', {
+					method: 'POST',
+					headers: {'Content-type': 'application/json'},
+					body: JSON.stringify(state)
+				})
+					.then(response => response.json())
+					.then(data => {
+						gameStateId = data.id;
+					})
+			} else {
+				fetch(`http://localhost:3000/api/data/${gameStateId}?api-key=c4game`, {
+					method: 'PUT',
+					headers: {'Content-type': 'application/json'},
+					body: JSON.stringify(state)
+				})
+					.then(response => response.json())
+			}
+		}
+
+		function loadState() {
+			if (!gameStateId) {
+				return;
+			}
+
+			fetch(`http://localhost:3000/api/data/${gameStateId}?api-key=c4game`)
+				.then(response => response.json())
+				.then(data => {
+					state = data;
+					showBoard();
+				})
+		}
+
+	</script>
+
+</head>
+
+<body>
+
+	<div class="board"></div>
+
+	<div class="controls">
+		<button onclick="loadState()">Load</button>
+		<button onclick="saveState()">Save</button>
+		<button onclick="resetState()">Reset</button>
+	</div>
+
+	<script>
+		initGame()
+	</script>
+
+</body>
+
+</html>

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Vier gewinnt</title>
+
+	<style>
+		div {
+			box-sizing: border-box;
+		}
+
+		.board {
+			width: 84vw;
+			margin: auto;
+			outline: 1px solid black;
+		}
+
+		.board .field {
+			border: 1px solid black;
+			width: 12vw;
+			height: 12vw;
+			float:left;
+		}
+
+		.board .field:first-child {
+			display: block;
+		}
+
+		.board .field .piece {
+			width: 10vw;
+			height: 10vw;
+			border-radius: 50%;
+			margin: 1vw;
+		}
+
+		.board .field .blue {
+			background-color: blue;
+		}
+
+		.board .field .red {
+			background-color: red;
+		}
+	</style>
+
+
+</head>
+
+<body>
+	<div class="board">
+	</div>
+	<script>
+		function drawBoard() {
+			for (const [rowId, row] of state.board.entries()) {
+				for (const [fieldId, field] of row.entries()) {
+					let id = rowId * 7 + fieldId
+					switch (field) {
+						case 'b':
+							let blue = getColorNode('b')
+							appendNode(id, blue)
+							break;
+						case 'r':
+							let red = getColorNode('r')
+							appendNode(id, red)
+							break;
+						default:
+							appendNode(id)
+							break;
+					}
+				}
+			}
+		}
+
+
+		function getColorNode(colorCharacter) {
+
+			if (colorCharacter == 'b') {
+				return elt('div', {'class': 'piece blue'})
+			} else {
+				return elt('div', {'class': 'piece red'})
+			}
+		}
+		const collection = document.getElementsByClassName('board')
+		function appendNode(id, child) {
+			if (child == undefined) {
+				collection[0].appendChild(elt('div', {'class': 'field', 'id': id}))
+			} else {
+				collection[0].appendChild(elt('div', {'class': 'field', 'id': id}, child))
+			}
+
+		}
+
+		function elt(type, attrs, ...children) {
+			let node = document.createElement(type)
+			Object.keys(attrs).forEach(key => {
+				node.setAttribute(key, attrs[key])
+			})
+			for (let child of children) {
+				if (typeof child != "string") node.appendChild(child)
+				else node.appendChild(document.createTextNode(child))
+			}
+			return node
+		}
+
+		let state = {
+			board: [
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', '', '', '', '', '', ''],
+				['', 'b', '', '', '', '', ''],
+				['', 'r', '', 'b', '', '', '']
+			]
+		}
+
+		function randomizeBoard() {
+			setTimeout(() => {
+				randomizeBoard()
+			}, 1000)
+			let randomNumber = Math.round(Math.random() * 3)
+			let index = Math.round(Math.random() * 41)
+			let row = Math.floor(index / 7)
+			let column = index % 6
+			let character
+			if (randomNumber < 1) {
+				character = ''
+				document.getElementById(index).replaceWith(elt('div', {'class': 'field', 'id': index}))
+			} else if (randomNumber < 2) {
+				character = 'b'
+				document.getElementById(index).replaceWith(elt('div', {'class': 'field', 'id': index},getColorNode('b')))
+			} else {
+				character = 'r'
+				document.getElementById(index).replaceWith(elt('div', {'class': 'field', 'id': index},getColorNode('r')))
+			}
+			state.board[row][column] = character
+		}
+
+		drawBoard()
+		randomizeBoard()
+	</script>
+</body>
+
+</html>
